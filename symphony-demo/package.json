@@ -1,0 +1,16 @@
+{
+  "name": "symphony-demo",
+  "version": "1.0.0",
+  "description": "Trying to push to GAS with Webpack",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Erich Diesel",
+  "license": "ISC",
+  "dependencies": {
+    "dayjs": "^1.11.7",
+    "webpack": "^5.83.1",
+    "webpack-cli": "^5.1.1"
+  }
+}

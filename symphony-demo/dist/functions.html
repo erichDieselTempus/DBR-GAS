@@ -1,0 +1,163 @@
+<script>
+  function load_scanning_layer(template_name) {
+    // Loads new scanning layer and updates to overlay grid to reflect this change.
+    // 
+
+    let SL = new ScanLayer(template_name, CAMERA_RESOLUTION, [VIDEO_DISPLAY_WIDTH, VIDEO_DISPLAY_HEIGHT])
+    // Update input fields and store the new ScanLayer before redrawing grid.
+    ActiveSL = SL
+    x_offset_input.value =  ActiveSL.x_offset_pct
+    y_offset_input.value =  ActiveSL.y_offset_pct
+    num_cols_input.value =  ActiveSL.num_cols
+    num_rows_input.value =  ActiveSL.num_rows
+    x_gap_input.value =     ActiveSL.x_gap_pct
+    y_gap_input.value =     ActiveSL.y_gap_pct
+    x_length_input.value =  ActiveSL.cell_x_pct
+    y_length_input.value =  ActiveSL.cell_y_pct
+    const event = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+    });
+    redraw_overlay()
+    update_status_message("--> New Scanning Layer Loaded: " + template_name )
+    document.getElementById("scanner_settings_update_trigger").dataset.value = ActiveSL.bc_format
+    document.getElementById("scanner_settings_update_trigger").dispatchEvent(event);
+  }
+
+  function update_status_message(msg) {
+    // Takes in any string and appends it to the status message element.
+      document.getElementById("status_message").innerText += msg + "\n"
+  }
+
+  function resolution_changed(event) {
+      // Not sure if currently in use.  Should firm up how/if we expect resolutions to change.  May be
+      // preferable to hard code the camera's maximum resolution in and hide the resolution control.
+
+      let resolution_selector = document.getElementsByClassName("dce-opt-gotResolution")
+      let d = resolution_selector.dataset
+      //let x_res = resolution_selector.dataset.width
+      //let y_res = resolutoin_selector.dataset.height
+      console.log("Resolution Changed",d)
+      //console.log(event)
+  }
+
+
+  function check_grid_click(event) {
+      // Called when the grid overlay is clicked.  Uses the Active scanning layer to determine
+      // if click falls in a grid cell, and marks it scanned if so.  Should
+      // Expand this to mark empty positions pre-scan.
+      console.log("You Clicked: " + event.offsetX.toString() + ", " + event.offsetY.toString())
+      let result = ActiveSL.getCellIndexAt(event.offsetX, event.offsetY)
+      if (result) {
+          console.log("You clicked Cell: " + result)
+          let regions = overlay.children[result - 1].classList.add('scanned')
+      }
+      
+  }
+
+  function check_grid_scan(txt,result, camRes) {
+      
+      let x1 = result["localizationResult"]["x1"]
+      let y1 = result["localizationResult"]["y1"]
+      let average_x = (result["localizationResult"]["x1"] + result["localizationResult"]["x2"] + result["localizationResult"]["x3"] + result["localizationResult"]["x4"])/4
+      let average_y = (result["localizationResult"]["y1"] + result["localizationResult"]["y2"] + result["localizationResult"]["y3"] + result["localizationResult"]["y4"])/4
+      
+      //Need to adjust the scale of units to reflect the overlay window.
+      // Scan results are reported in camera pixels.
+      //console.log("Code Centroid Read: " + average_x.toString() + ", " + average_y.toString())
+      console.log(camRes)
+      console.log("Scale Factor:", VIDEO_DISPLAY_WIDTH / camRes[0])
+      let grid_match = ActiveSL.checkNewScan(average_x, average_y, VIDEO_DISPLAY_WIDTH / camRes[0], txt)
+      if (grid_match) {
+          overlay.children[grid_match - 1].classList.add('scanned')
+      }
+
+      if (ActiveSL.scan_complete) {
+          update_status_message("Current Layer is fully scanned:")
+          update_status_message(ActiveSL.getResultString())
+          current_scanning_layer += 1
+          // Refresh camera after completing scan to forget duplicates?
+          const event = new MouseEvent("click", {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+          });
+          
+          document.getElementById("scanner_pause_trigger").dispatchEvent(event);
+          if (current_scanning_layer == SCANNING_PLAN.length) {
+              alert("Entire Scan Plan is complete")
+          }
+          else {
+              if (ActiveSL.increment_camera) {
+                  console.log("increment")
+                  document.getElementById("increment_camera_trigger").dispatchEvent(event);
+              }
+              load_scanning_layer(SCANNING_PLAN[current_scanning_layer]) 
+              alert("Layer Complete, Slect Resume Scan to procede to next layer")
+          }
+      }
+  }
+
+
+  
+  function refresh_roi_inputs() {
+      let left =  ActiveSL.x_offset_pct
+      let top =  ActiveSL.y_offset_pct
+      let cell_width = ActiveSL.cell_x_pct + ActiveSL.x_gap_pct
+      let cell_height = ActiveSL.cell_y_pct + ActiveSL.y_gap_pct
+      let right = left + (cell_width * ActiveSL.num_cols) - ActiveSL.x_gap_pct
+      let bottom = top + (cell_height * ActiveSL.num_rows) - ActiveSL.y_gap_pct
+      document.getElementById("roi_top_input").value = top
+      document.getElementById("roi_bottom_input").value = bottom
+      document.getElementById("roi_left_input").value = left
+      document.getElementById("roi_right_input").value = right
+  }
+
+  function redraw_overlay() {
+      // Set offset and grid gaps
+      overlay.style.paddingLeft = (x_offset_input.value * VIDEO_DISPLAY_WIDTH/100).toString() + "px"
+      overlay.style.paddingTop =  (y_offset_input.value * VIDEO_DISPLAY_HEIGHT/100).toString() + "px"
+      let x_gap = (x_gap_input.value * VIDEO_DISPLAY_WIDTH/100).toString() + "px"
+      let y_gap = (y_gap_input.value * VIDEO_DISPLAY_HEIGHT/100).toString() + "px"
+      //let x_gap = ActiveSL.x_gap_px + "px"
+      //let y_gap = ActiveSL.y_gap_px + "px"
+      // Grid gap takes <Row-gap> <Column-Gap>, so y_gap goes first
+      overlay.style.gap = y_gap + " " + x_gap
+      // Set grid template based on cell sizes.
+      let num_cols = num_cols_input.value.toString()
+      let num_rows = num_rows_input.value.toString()
+      let x_size = (x_length_input.value * VIDEO_DISPLAY_WIDTH/100).toString() + "px"
+      let y_size = (y_length_input.value * VIDEO_DISPLAY_HEIGHT/100).toString() + "px"
+      // repeat(N, 99px)
+      overlay.style.gridTemplateColumns = "repeat(" + num_cols + "," + x_size + ")"
+      overlay.style.gridTemplateRows = "repeat(" + num_rows + "," + y_size + ")"
+
+      // Clear elements in the overlay
+      while (overlay.hasChildNodes()) {
+          overlay.removeChild(overlay.firstChild);
+      }
+      // Add new elements based on # of rows * columns
+      for (let i=0;  i < num_rows*num_cols; i++) {
+          let br = document.createElement("div")
+          br.classList.add('barcode_region');
+          document.getElementById("overlay").appendChild(br)  
+      }
+      refresh_roi_inputs()
+  }   
+
+  function set_display_size(width, height) {
+    let overlay = document.getElementById("overlay")
+    width = width.toString() + "px"
+    height = height.toString() + "px"
+    document.getElementById("masterGrid").style.gridTemplateColumns = "minmax(0, 1fr) " + width + " minmax(0, 1fr)"
+    console.log(document.getElementById("masterGrid").style.gridTemplateColumns = "minmax(0, 1fr) " + width.toString() + " minmax(0, 1fr)")
+    console.log("Set Display Size", width, height) 
+    console.log(document.getElementsByClassName("dce-video-container")[0])         
+    document.getElementsByClassName("dce-video-container")[0].style.width = width
+    document.getElementsByClassName("dce-video-container")[0].style.height = height
+    console.log(document.getElementsByClassName("dce-video-container")[0])
+    overlay.style.width = width
+    overlay.style.height = height
+  }
+</script>

@@ -3,13 +3,13 @@ const path = require('path');
 module.exports = {
     mode: 'production',
     entry: {
-        main: path.resolve('./src', 'day.js'),
+        main: path.resolve('./src', 'index.js'),
     },
     output: {
-        path: path.resolve('.', 'dist'),
-        filename: '_Day.js',
+        path: path.resolve(__dirname, 'dist'),
+        filename: '_bundle.js',
         library: {
-            name: 'Dayjs',
+            name: 'DBR',
             type: 'var',
         },
     },

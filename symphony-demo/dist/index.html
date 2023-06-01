@@ -17,11 +17,14 @@
     <button hidden id="scanner_settings_update_trigger" data-value="0x8000000">1-D Barcode Format</button>
     <button hidden id="scanner_pause_trigger">Scanner Pause Trigger</button>
 
+    <!-- BUTTONS BEING USED FOR DEBUG -->
+    <button hidden  id="report_camera_trigger">Get Camera Info</button>
+    <button hidden id="capture_image_trigger">Capture Image</button>
+    <!-- END DEBUG BUTTONS -->
 
-    <button  id="report_camera_trigger">Get Camera Info</button>
     <button  id="increment_camera_trigger" data-active_index="0">Next Camera</button>
-    <button id="capture_image_trigger">Capture Image</button>
-    <button id="scanner_resume_trigger">SCAN!</button>
+    <button id="scanner_resume_trigger">START</button>
+    <button id="dowload_results_trigger" onclick="download_results()">Download Results</button>
     <div id = "masterGrid">
       <div id="left_sidebar" class="sidebar">
         <h4>STATUS MESSAGE:</h4>
@@ -70,10 +73,16 @@
         </div>
       </div>
       <div id = "div-ui-container">
-        <select class="dce-sel-camera"></select>
-        <select class="dce-sel-resolution" onchange="resolution_changed(event)"></select><br>
+        <br><br>
+        <!-- CAMERA SELECTOR AND RESOLUTION SELECTOR HAVE BEEN HIDDEN/REMOVED -->
+        <!-- <select class="dce-sel-camera"></select> -->
+        <!-- <select class="dce-sel-resolution" onchange="resolution_changed(event)"></select><br> -->
         
-        <div class="dce-video-container"></div>
+        <div class="dce-video-container">
+          <div class="dce-scanarea" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;">
+            <div class="dce-scanlight" style="display:none;position:absolute;width:100%;height:3%;border-radius:50%;box-shadow:0px 0px 2vw 1px #00e5ff;background:#fff;animation:3s infinite dce-scanlight;user-select:none;"></div>
+          </div>
+        </div>
         <div id="overlay" onclick="check_grid_click(event)"></div>
       </div>
       <div id="right_sidebar" class="sidebar">
@@ -92,13 +101,14 @@
     
     <script>
       // Assume that we will only deal in video formats with a 16:9 aspect ratio
-      const DEV_MODE = true
+      const DEV_MODE = false
       const VIDEO_DISPLAY_WIDTH = 800 
       const VIDEO_DISPLAY_HEIGHT = VIDEO_DISPLAY_WIDTH * (9/16)
       const CAMERA_RESOLUTION = [3840,2160]
       //const CAMERA_RESOLUTION = [1920,1080]
-      const SCANNING_PLAN = ["SYMPHONY","LEFT_RACK","RIGHT_RACK","TUBES","FLUIDX_RACK"]
-
+      //const CAMERA_RESOLUTION = [1280, 720]
+      //const SCANNING_PLAN = ["TRAY_ID","LEFT_RACK","RIGHT_RACK","TUBES","FLUIDX_RACK"]
+      const SCANNING_PLAN = ["SYMPHONY"]
       var current_scanning_layer = 0
 
       var x_offset_input = document.getElementById("x_offset_input")
@@ -120,8 +130,9 @@
       let dev_controls = document.getElementsByClassName('devMode')
       for (let i = 0; i < dev_controls.length; i++) {if (!DEV_MODE) {dev_controls[i].hidden = true}}
       
-      alert('Scanning will begin when you select "START SCANNING".')
-      //
+      update_status_message("Please toggle any empty positions, the select START to begin scanning")
+      //alert('Scanning will begin when you select "START SCANNING".')
+
 
       
     </script>
@@ -138,6 +149,10 @@
         display:grid;
         grid-template-columns: minmax(0, 1fr) 960px minmax(0, 1fr);
         grid-template-rows: 1fr 1fr;
+    }
+
+    .dce-sel-camera {
+      display: none;
     }
 
     

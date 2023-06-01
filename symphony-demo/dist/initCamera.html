@@ -3,30 +3,26 @@
   var pScanner = null;
 
   async function startCamera() {
+    // Initialize the DBR scanner and adjust any relevant settings.  This function also establishes the 
+    // "On Unique Read" behavior via reference to the check_grid_scan callback.
       try {
           let scanner = await (pScanner = pScanner || Dynamsoft.DBR.BarcodeScanner.createInstance());
 
-          // Can't get API to report cameras, it is returning an empty array.  Ignoring for now
-          //  because I suspect it might be a permissions issue that will be influenced by build process.
           
           let settings = await scanner.getRuntimeSettings();
-          await scanner.setResolution(3840, 2160 );
-          //await scanner.setResolution(1920, 1080 );
+          await scanner.setResolution(3840, 2160);
           let camRes = await scanner.getResolution()
-          console.log(camRes, "START CAMERA")
+          console.log(camRes, "START CAMERA - initCamera.html")
           
 
           //  Set general decoding settings (These remain unchanged across scanning layers)
           settings.furtherModes.deformationResistingModes = [2, 0, 0, 0, 0, 0, 0, 0];
-          settings.deblurModes = [1, 2, 4, 8, 0, 0, 0, 0, 0, 0];
-          settings.timeout = 50000
+          settings.deblurModes = [1, 2, 4, 8, 16, 32, 64, 128, 0, 0];
+          settings.timeout = 500000
           await scanner.updateRuntimeSettings(settings);
           await scanner.setUIElement(document.getElementById('div-ui-container'));
-          // Would it be worth forcing you to wait for a frame where all codes can be read simultaneously?
-          // Does this change if we're trying to archive photos from the scan?
-
-
-          /*
+          
+          
           scanner.onFrameRead = results => {
               //console.log("Barcodes on one frame:");
               for (let result of results) {
@@ -34,22 +30,22 @@
                   //console.log(format + ": " + result.barcodeText);
               }
           };
-          */
+          
           scanner.onUniqueRead = (txt, result) => {
               check_grid_scan(txt, result, camRes)
           }
 
           await scanner.show();
           await scanner.pauseScan();
-          
-          //confirm('Please ensure the camera and scan target are properly aligned, then click "Begin Scanning"')
               
       } catch (ex) {
           //alert(ex.message);
           throw ex;
       }
   }
+
   if (document.getElementById('scanner_settings_update_trigger')) {
+
     document.getElementById('scanner_settings_update_trigger').onclick = async function() {
         try {
             let scanner = await (pScanner = pScanner || BarcodeScanner.createInstance());
@@ -88,9 +84,6 @@ if (document.getElementById('capture_image_trigger')) {
             console.log("Attempting to Capture image")
             let scanner = await (pScanner = pScanner || BarcodeScanner.createInstance());
             scanner.ifSaveOriginalImageInACanvas = true
-            let cvs = await scanner.getOriginalImageInACanvas();
-            console.log(cvs)
-            document.getElementById('cves').appendChild(cvs)
         } catch (ex) {
             alert(ex.message);
             throw ex;
@@ -137,6 +130,7 @@ if (document.getElementById('report_camera_trigger')) {
 }
 
 if (document.getElementById('increment_camera_trigger')) {
+
     document.getElementById('increment_camera_trigger').onclick = async function() {
         try {
             let scanner = await (pScanner = pScanner || BarcodeScanner.createInstance());

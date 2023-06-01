@@ -138,6 +138,21 @@ class ScanLayer {
         }
         return resultString
     }
+
+    getResultJSON() {
+      return JSON.stringify(this.results)
+    }
+
+    getResultCSV() {
+      let resultString = ""
+      resultString += "Index,Barcode\n"
+      for (let key in this.results) {
+          resultString += key.toString() + "," + this.results[key].toString() + "\n"
+      }
+      return resultString
+
+    }
+    
     pushResultToBrowser() {
         // Should probably change this to provide return a string and let the user decide what to do with it
         let resultString = ""

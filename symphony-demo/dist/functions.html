@@ -56,18 +56,26 @@
       
   }
 
+  function download_results() {
+    let csvContent = ActiveSL.getResultCSV()
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8,' })
+    const objUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', objUrl)
+    link.setAttribute('download', 'File.csv')
+    link.textContent = 'Click to Download'
+    document.body.append(link)
+    link.click()
+  }
+
+
   function check_grid_scan(txt,result, camRes) {
       
-      let x1 = result["localizationResult"]["x1"]
-      let y1 = result["localizationResult"]["y1"]
+      // Find centroid of BC to compare against Scanning Layer Regions
       let average_x = (result["localizationResult"]["x1"] + result["localizationResult"]["x2"] + result["localizationResult"]["x3"] + result["localizationResult"]["x4"])/4
       let average_y = (result["localizationResult"]["y1"] + result["localizationResult"]["y2"] + result["localizationResult"]["y3"] + result["localizationResult"]["y4"])/4
       
-      //Need to adjust the scale of units to reflect the overlay window.
-      // Scan results are reported in camera pixels.
-      //console.log("Code Centroid Read: " + average_x.toString() + ", " + average_y.toString())
-      console.log(camRes)
-      console.log("Scale Factor:", VIDEO_DISPLAY_WIDTH / camRes[0])
+      // Check if read is in valid region and if so, mark that region scanned.
       let grid_match = ActiveSL.checkNewScan(average_x, average_y, VIDEO_DISPLAY_WIDTH / camRes[0], txt)
       if (grid_match) {
           overlay.children[grid_match - 1].classList.add('scanned')
@@ -75,9 +83,10 @@
 
       if (ActiveSL.scan_complete) {
           update_status_message("Current Layer is fully scanned:")
-          update_status_message(ActiveSL.getResultString())
+          let new_results = ActiveSL.getResultString()
+          update_status_message(new_results)
           current_scanning_layer += 1
-          // Refresh camera after completing scan to forget duplicates?
+          // Refresh camera after completing scan to forget duplicates.
           const event = new MouseEvent("click", {
               view: window,
               bubbles: true,
